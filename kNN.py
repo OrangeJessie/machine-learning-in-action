@@ -1,6 +1,6 @@
+# find out who to date with
 from numpy import*
 import operator
-import matplotlib
 import matplotlib.pyplot as plt
 
 
@@ -41,10 +41,14 @@ def file2matrix(filename):                      # change file into matrix
     return train_list, class_label
 
 
-def auto_norm(data_set):
+def auto_norm(data_set):                    # normalize data
     min_value = data_set.min(0)
     max_value = data_set.max(0)
-    range = max_value - min_value
+    range_of_data = max_value - min_value
+    len_of_data = data_set.shape[0]
+    data_set_out = data_set - tile(min_value, (len_of_data, 1))
+    data_set_out = data_set_out/tile(range_of_data, (len_of_data, 1))
+    return data_set_out, range_of_data, min_value
 
 
 def str2int(str_list):                  # change string label into int label
@@ -58,12 +62,43 @@ def str2int(str_list):                  # change string label into int label
             int_str.append(1)
     return int_str
 
-train_group, train_labels = create_data()
-real_type = classify([0, 0], train_group, train_labels, 3)
-train_group2, train_labels2 = file2matrix('datingTestSet.txt')
-train_labels3 = str2int(train_labels2)
-real_type2 = classify([20000, 12, 1], train_group2, train_labels2, 10)
-fig = plt.figure()
-ax = fig.add_subplot(111)
-ax.scatter(train_group2[:, 0], train_group2[:, 1], 15*array(train_labels3), 15*array(train_labels3))
-plt.show()
+
+def data_test():                    # use some data to test the algorithm
+    ratio = 0.1
+    data, label = file2matrix('datingTestSet.txt')
+    label = str2int(label)
+    data_set, ranges, min_data = auto_norm(data)
+    num_data = data_set.shape[0]
+    num_test = int(ratio*num_data)
+    num_error = 0.0
+    for i in range(num_test):
+        result = classify(data_set[i, :], data_set[num_test:num_data, :], label[num_test:num_data], 10)
+        print('the classify result is: {}, the real data is: {}'.format(result, label[i]))
+        if result != label[i]:
+            num_error += 1.0
+    print('the total error rate is: {}'.format(num_error/float(num_test)))
+
+
+def classify_people():
+    people_data1 = float(input('input percentage of time spend playing video games:'))
+    people_data2 = float(input('input frequent flier miles per year:'))
+    people_data3 = float(input('input eat ice cream per year:'))
+    dating_data, dating_label = file2matrix('datingTestSet.txt')
+    norm_data, data_range, data_min = auto_norm(dating_data)
+    dating_label = str2int(dating_label)
+    new_people = array([people_data2, people_data1, people_data3])
+    kind_of_people = int(classify((new_people - data_min)/data_range, norm_data, dating_label, 3))
+    label_list = ['no interest', 'smallDoses', 'largeDoses']
+    print(label_list[kind_of_people - 1])
+    return label_list[kind_of_people - 1]
+
+
+def plot_fig(train_group, train_labels):                    # plot the figure
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(train_group[:, 0], train_group[:, 1], 15*array(train_labels), 15*array(train_labels))
+    plt.show()
+
+
+data_test()
+classify_people()
